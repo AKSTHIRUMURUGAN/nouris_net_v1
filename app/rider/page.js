@@ -1,10 +1,14 @@
 "use client"
-
 import { Link, Card, Button, CardBody, CardHeader } from "@nextui-org/react"
 import { useRouter } from "next/navigation"
 import { FaMotorcycle, FaHistory, FaAward } from "react-icons/fa"
-import Lottie from "lottie-react"
+import dynamic from 'next/dynamic'
 import animationData from "../assets/Animation - 1723325524933.json"
+
+const Lottie = dynamic(
+  () => import('lottie-react'),
+  { ssr: false }
+)
 
 export default function RiderPage() {
   const router = useRouter()
@@ -46,7 +50,13 @@ export default function RiderPage() {
 
         <div className="flex flex-col md:flex-row items-center justify-between mb-12">
           <div className="w-full md:w-1/2">
-            <Lottie animationData={animationData} loop={true} />
+          {typeof window !== 'undefined' && (
+    <Lottie 
+      animationData={animationData} 
+      loop={true}
+      style={{ width: '100%', height: '400px' }}
+    />
+  )}
           </div>
 
           <div className="w-full md:w-1/2 md:pl-8">

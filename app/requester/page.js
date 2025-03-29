@@ -1,31 +1,18 @@
 "use client"
 import { useRouter } from 'next/navigation'
-import React, { useEffect } from "react"
-import lottie from "lottie-web"
+import React from "react"
 import { Button } from "../../components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Coins, Clock, Scale, HeartHandshake, ArrowRight } from "lucide-react"
+import dynamic from 'next/dynamic'
+
+const Lottie = dynamic(
+  () => import('lottie-react'),
+  { ssr: false }
+)
 
 const Page = () => {
-  useEffect(() => {
-    // Check if window is defined (client-side)
-    if (typeof window !== "undefined") {
-      const container = document.getElementById("lottie-container");
-      if (container) {
-        const animation = lottie.loadAnimation({
-          container,
-          renderer: "svg",
-          loop: true,
-          autoplay: true,
-          path: "https://lottie.host/84293a06-58ec-4a88-bfd2-e6d672bb9a5a/ys8UWuIJsR.json",
-        });
-
-        return () => animation.destroy();
-      }
-    }
-  }, []);
-
   const router = useRouter()
 
   return (
@@ -65,7 +52,14 @@ const Page = () => {
             Empowering you with access to nourishment, anytime, anywhere
           </p>
           
-          <div id="lottie-container" className="w-64 h-64 mx-auto mb-8" />
+          <div className="w-64 h-64 mx-auto mb-8">
+            <Lottie 
+              animationData="https://lottie.host/84293a06-58ec-4a88-bfd2-e6d672bb9a5a/ys8UWuIJsR.json"
+              loop={true}
+              autoplay={true}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </div>
           
           <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <p className="text-gray-800 mb-3">

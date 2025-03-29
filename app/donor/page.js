@@ -3,9 +3,12 @@
 import { Link, Card, Button, CardBody, CardHeader } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { FaHandHoldingHeart, FaGift, FaCoins } from "react-icons/fa";
-import Lottie from "lottie-react";
 import animationData from "../assets/Animation - 1723325524933.json";
-
+import dynamic from "next/dynamic"
+const Lottie = dynamic(
+  () => import('lottie-react'),
+  { ssr: false }
+)
 export default function DonorPage() {
   const router = useRouter();
 
@@ -46,7 +49,13 @@ export default function DonorPage() {
 
         <div className="flex flex-col md:flex-row items-center justify-between mb-12">
           <div className="w-full md:w-1/2">
-            <Lottie animationData={animationData} loop={true} />
+          {typeof window !== 'undefined' && (
+    <Lottie 
+      animationData={animationData} 
+      loop={true}
+      style={{ width: '100%', height: '400px' }}
+    />
+  )}
           </div>
 
           <div className="w-full md:w-1/2 md:pl-8">
