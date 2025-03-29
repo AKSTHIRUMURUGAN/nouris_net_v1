@@ -1,5 +1,5 @@
-import connectDB from "../../../libs/mongodb";
-import Donation from "../../../models/donationModel";
+import connectDB from "../libs/mongodb";
+import Donation from "../models/donationModel";
 import { NextResponse } from "next/server";
 
 // Get all donations

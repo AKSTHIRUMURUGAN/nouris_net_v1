@@ -1,5 +1,5 @@
-import connectDB from "../../../../libs/mongodb";
-import Ride from "../../../../models/rideModel"; // Ensure this model is correctly imported
+import connectDB from "../../libs/mongodb";
+import Ride from "../../models/rideModel"; // Ensure this model is correctly imported
 import { NextResponse } from "next/server";
 
 // Get a specific ride by ID

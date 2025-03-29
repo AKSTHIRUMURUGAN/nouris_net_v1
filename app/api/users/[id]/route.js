@@ -1,5 +1,5 @@
-import connectDB from "../../../../libs/mongodb";
-import User from "../../../../models/userModel"; // Assuming you have defined this model
+import connectDB from "../../libs/mongodb";
+import User from "../../models/userModel"; // Assuming you have defined this model
 import { NextResponse } from "next/server";
 
 // Get a specific user by ID

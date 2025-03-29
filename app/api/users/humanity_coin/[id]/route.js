@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import connectDB from "../../../../libs/mongodb";
-import User from "../../../../models/userModel"; // Ensure this model is correctly defined
+import connectDB from "../../../libs/mongodb";
+import User from "../../../models/userModel"; // Ensure this model is correctly defined
 import { NextResponse } from "next/server";
 
 export async function GET(req) {

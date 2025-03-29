@@ -1,5 +1,5 @@
-import connectDB from "../../../../libs/mongodb";
-import Donation from "../../../../models/donationModel"; // Assuming you have defined this model
+import connectDB from "../../libs/mongodb";
+import Donation from "../../models/donationModel"; // Assuming you have defined this model
 import { NextResponse } from "next/server";
 // Create a new donation
 export async function POST(req) {

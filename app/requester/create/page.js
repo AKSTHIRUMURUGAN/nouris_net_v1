@@ -1,170 +1,203 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import {
-  Input,
-  Button,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Divider,
-  Link,
-  Textarea,
-  Image,
-  RadioGroup,
-  Radio,
-} from "@nextui-org/react";
-import { useRouter } from "next/navigation";
-import axios from "axios";
-import { FaInfoCircle } from "react-icons/fa";
+"use client"
+import React, { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Input } from "../../../components/ui/input"
+import { Button } from "../../../components/ui/button"
+import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "../../../components/ui/card"
+import { Textarea } from "../../../components/ui/textarea"
+import { Label } from "../../../components/ui/label"
+import { CalendarIcon, InfoCircledIcon } from "@radix-ui/react-icons"
+import axios from "axios"
+import { toast } from "../../../components/ui/use-toast"
+import Link from "next/link"
 
 export default function RequesterForm() {
-  const [user, setUser] = useState("");
-  const [productName, setProductName] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [lastDate, setLastDate] = useState("");
-  const [address, setAddress] = useState("");
-  const [specialNote, setSpecialNote] = useState("");
-  const router = useRouter();
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [userProfile, setUserProfile] = useState(null)
+  const [formData, setFormData] = useState({
+    productName: "",
+    quantity: 1,
+    lastDate: "",
+    address: "",
+    specialNote: "",
+  })
 
   useEffect(() => {
-    const profile = async () => {
-      const { data } = await axios.get("/api/users/myprofile");
-      setUser(data.user._id);
-    };
-    profile();
-   
-  }, []);
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const formData = {
-      needer:user,
-      productName,
-      quantity,
-      lastDate,
-      address,
-      specialNote,
-    };
-
-    try {
-      const response = await axios.post("/api/requests/new", formData);
-
-      if (!response.data.success) {
-        throw new Error("Failed to create request");
+    const fetchUserProfile = async () => {
+      try {
+        const response = await axios.get("/api/users/myprofile")
+        if (response.data.success) {
+          setUserProfile(response.data.user)
+          setFormData(prev => ({
+            ...prev,
+            address: response.data.user.address || "",
+          }))
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch user profile",
+          variant: "destructive",
+        })
       }
-
-      alert("Request created successfully");
-      router.push("/requests/success");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Submission failed");
     }
-  };
+    fetchUserProfile()
+  }, [])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!userProfile) {
+      toast({
+        title: "Profile Required",
+        description: "Please complete your profile before creating a request",
+        variant: "destructive",
+      })
+      router.push("/")
+      return
+    }
+    
+    setIsSubmitting(true)
+    try {
+      const response = await axios.post("/api/requests/new", {
+        ...formData,
+        needer: userProfile._id,
+      })
+      
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: "Request created successfully!",
+        })
+        router.push("/requester/myrequest")
+      } else {
+        throw new Error(response.data.message || "Failed to create request")
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create request",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
-    <div className="flex justify-center align-middle">
-      <Card className="card">
-        <CardHeader className="flex gap-3">
-          <Image
-            alt="nextui logo"
-            height={40}
-            radius="sm"
-            src="https://utfs.io/f/a9b8f892-fc28-48d6-be0a-3a22f2dc0d06-d48s3m.png"
-            width={40}
-          />
-          <div className="flex flex-col">
-            <p className="text-md">PARKWIZ</p>
-            <p className="text-small text-default-500">Requester Form</p>
-          </div>
-        </CardHeader>
-        <Divider />
-        <CardBody className="m-10">
-          <form
-            className="flex flex-col align-middle gap-3 p-10"
-            onSubmit={handleSubmit}
-          >
+    <div className="container mx-auto py-8 px-4 max-w-2xl">
+      <div className="space-y-2 mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">Create Food Request</h1>
+        <p className="text-muted-foreground">Request the food items you need</p>
+      </div>
 
-            <Input
-              isClearable
-              isRequired
-              label="Product Name"
-              variant="bordered"
-              description="Enter the product name."
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              type="number"
-              isRequired
-              label="Quantity"
-              variant="bordered"
-              value={quantity}
-              min={1}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              type="date"
-              isRequired
-              label="Last Date for Requirement"
-              variant="bordered"
-              value={lastDate}
-              onChange={(e) => setLastDate(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              isClearable
-              isRequired
-              label="Address"
-              variant="bordered"
-              description="Enter the address."
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="max-w-xs"
-            />
-            <Textarea
-              label="Special Note"
-              placeholder="Any special notes?"
-              variant="bordered"
-              value={specialNote}
-              onChange={(e) => setSpecialNote(e.target.value)}
-              className="max-w-xs"
-            />
-            {/* <RadioGroup
-              label="Status"
-              value={status}
-              onValueChange={setStatus}
-              className="max-w-xs"
-            >
-              <Radio value="pending">Pending</Radio>
-              <Radio value="approved">Approved</Radio>
-              <Radio value="completed">Completed</Radio>
-            </RadioGroup> */}
-            <Button color="primary" type="submit">
-              Submit Request
-            </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Request Details</CardTitle>
+          <CardDescription>Provide details about the food you need</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="productName">Product Name</Label>
+              <Input 
+                id="productName"
+                name="productName" 
+                value={formData.productName} 
+                onChange={handleChange} 
+                required 
+                placeholder="What food item do you need?"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity (kg)</Label>
+              <Input 
+                id="quantity"
+                name="quantity" 
+                type="number" 
+                min="1" 
+                value={formData.quantity} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastDate">Last Date Needed</Label>
+              <div className="relative">
+                <Input 
+                  id="lastDate"
+                  name="lastDate" 
+                  type="date" 
+                  value={formData.lastDate} 
+                  onChange={handleChange} 
+                  required 
+                />
+                <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Delivery Address</Label>
+              <Textarea 
+                id="address"
+                name="address" 
+                value={formData.address} 
+                onChange={handleChange} 
+                required 
+                placeholder="Where should the food be delivered?"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="specialNote">Special Notes</Label>
+              <Textarea 
+                id="specialNote"
+                name="specialNote" 
+                value={formData.specialNote} 
+                onChange={handleChange} 
+                placeholder="Any dietary restrictions or special requirements?"
+              />
+            </div>
+
+            <CardFooter className="flex justify-end gap-4 px-0 pt-6">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => router.back()} 
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Request"}
+              </Button>
+            </CardFooter>
           </form>
-        </CardBody>
-        <Divider />
-        <CardFooter>
-          <p>
-            Need help? <FaInfoCircle className="inline-block ml-1" />
-          </p>
-          <span>
-            <Link
-              className="text-blue-600"
-              showAnchorIcon
-              onClick={() => {
-                router.push("/help");
-              }}
-            >
-              Contact Support
-            </Link>
-          </span>
-        </CardFooter>
+        </CardContent>
       </Card>
+
+      <div className="mt-4 text-center text-sm text-muted-foreground">
+        Need help?{" "}
+        <Link 
+          href="/help" 
+          className="text-primary hover:underline inline-flex items-center"
+        >
+          Contact Support <InfoCircledIcon className="ml-1 h-4 w-4" />
+        </Link>
+      </div>
     </div>
-  );
+  )
 }

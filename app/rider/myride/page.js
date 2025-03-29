@@ -1,135 +1,140 @@
-"use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+"use client"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import {
   Table,
   TableHeader,
-  TableColumn,
-  TableBody,
   TableRow,
+  TableHead,
+  TableBody,
   TableCell,
-  Input,
-  Button,
-  Dropdown,
-  DropdownTrigger,
+} from "../../../components/ui/table"
+import { Input } from "../../../components/ui/input"
+import { Button } from "../../../components/ui/button"
+import {
   DropdownMenu,
-  DropdownItem,
-  Pagination,
-} from "@nextui-org/react";
-import { FaSearch, FaChevronDown, FaEllipsisV } from "react-icons/fa";
-import axios from "axios";
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation"; // Importing useRouter
-import { capitalize } from "../../data/utils"; // Assuming you have a capitalize utility function
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "../../../components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select"
+import { Badge } from "../../../components/ui/badge"
+import { Search, ChevronDown, MoreVertical, Truck, Clock, MapPin, Gauge } from "lucide-react"
+import axios from "axios"
+import { useUser } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card"
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "../../../components/ui/pagination"
 
 const rideColumns = [
-  { name: "PICKUP LOCATION", uid: "pickupLocation" },
-  { name: "DROPOFF LOCATION", uid: "dropoffLocation" },
-  { name: "DISTANCE (km)", uid: "distanceTraveled" },
-  { name: "START TIME", uid: "startTime", sortable: true },
-  { name: "END TIME", uid: "endTime" },
-  { name: "TYPE", uid: "rideType" },
-  { name: "STATUS", uid: "status", sortable: true },
-  { name: "ACTIONS", uid: "actions" },
+  { name: "Pickup Location", uid: "pickupLocation" },
+  { name: "Dropoff Location", uid: "dropoffLocation" },
+  { name: "Distance (km)", uid: "distanceTraveled" },
+  { name: "Start Time", uid: "startTime", sortable: true },
+  { name: "End Time", uid: "endTime" },
+  { name: "Type", uid: "rideType" },
+  { name: "Status", uid: "status", sortable: true },
+  { name: "Actions", uid: "actions" },
 ];
 
 const statusOptions = {
   available: {
     label: 'Available',
-    color: 'green',
+    variant: 'success',
   },
   booked: {
     label: 'Booked',
-    color: 'yellow',
+    variant: 'warning',
   },
   'in transit': {
     label: 'In Transit',
-    color: 'blue',
+    variant: 'info',
   },
   delivered: {
     label: 'Delivered',
-    color: 'purple',
+    variant: 'default',
   },
   cancelled: {
     label: 'Cancelled',
-    color: 'red',
+    variant: 'destructive',
   },
 };
 
 const INITIAL_VISIBLE_COLUMNS = ["pickupLocation", "dropoffLocation", "distanceTraveled", "startTime", "endTime", "rideType", "status", "actions"];
 
 export default function RidesTable() {
-  const [rides, setRides] = useState([]);
-  const [filterValue, setFilterValue] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
-  const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-  const [statusFilter, setStatusFilter] = useState(new Set());
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rides, setRides] = useState([])
+  const [filterValue, setFilterValue] = useState("")
+  const [statusFilter, setStatusFilter] = useState([])
+  const [rowsPerPage, setRowsPerPage] = useState(5)
   const [sortDescriptor, setSortDescriptor] = useState({
     column: "startTime",
     direction: "ascending",
-  });
-  const [page, setPage] = useState(1);
-  const { isLoaded, isSignedIn, user } = useUser();
-  const [userId, setUserId] = useState(null);
-  const router = useRouter(); // Initialize the router
+  })
+  const [page, setPage] = useState(1)
+  const { isLoaded, isSignedIn, user } = useUser()
+  const [userId, setUserId] = useState(null)
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await axios.get("/api/users/myprofile");
+        const response = await axios.get("/api/users/myprofile")
         if (response.data.success) {
-          setUserId(response.data.user._id);
-        } else {
-          console.error("Failed to fetch user profile:", response.data);
+          setUserId(response.data.user._id)
         }
       } catch (error) {
-        console.error("Failed to fetch user profile:", error);
+        console.error("Failed to fetch user profile:", error)
       }
-    };
+    }
 
-    fetchUserProfile();
-  }, []);
+    fetchUserProfile()
+  }, [])
 
   useEffect(() => {
     const fetchRides = async () => {
+      setIsLoading(true)
       try {
-        const response = await axios.get("/api/rides");
+        const response = await axios.get("/api/rides")
         if (response.data.success) {
-          setRides(response.data.rides);
-        } else {
-          console.error("Failed to fetch rides:", response.data);
+          setRides(response.data.rides)
         }
       } catch (error) {
-        console.error("Failed to fetch rides:", error);
+        console.error("Failed to fetch rides:", error)
+      } finally {
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchRides();
-  }, []);
+    fetchRides()
+  }, [])
 
-  // Function to handle the delete action
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`/api/rides/${id}`);
+      const response = await axios.delete(`/api/rides/${id}`)
       if (response.data.success) {
-        setRides(rides.filter((ride) => ride._id !== id));
-      } else {
-        console.error("Failed to delete ride:", response.data);
+        setRides(rides.filter((ride) => ride._id !== id))
       }
     } catch (error) {
-      console.error("Failed to delete ride:", error);
+      console.error("Failed to delete ride:", error)
     }
-  };
+  }
 
-  // Function to handle the view action
   const handleView = (id) => {
-    router.push(`/rider/${id}`);
-  };
+    router.push(`/rider/${id}`)
+  }
 
-  // Function to handle the edit action
   const handleEdit = (id) => {
-    router.push(`/rider/edit/${id}`);
-  };
+    router.push(`/rider/edit/${id}`)
+  }
 
   const filteredRides = useMemo(() => {
     return rides.filter(
@@ -137,195 +142,251 @@ export default function RidesTable() {
         ride.user === userId &&
         (ride.pickupLocation.toLowerCase().includes(filterValue.toLowerCase()) ||
           ride.dropoffLocation.toLowerCase().includes(filterValue.toLowerCase())) &&
-        (statusFilter.size === 0 || statusFilter.has(ride.status))
-    );
-  }, [rides, filterValue, userId, statusFilter]);
+        (statusFilter.length === 0 || statusFilter.includes(ride.status))
+    )
+  }, [rides, filterValue, userId, statusFilter])
 
   const items = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filteredRides.slice(start, end);
-  }, [page, filteredRides, rowsPerPage]);
+    const start = (page - 1) * rowsPerPage
+    const end = start + rowsPerPage
+    return filteredRides.slice(start, end)
+  }, [page, filteredRides, rowsPerPage])
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
-      const first = a[sortDescriptor.column];
-      const second = b[sortDescriptor.column];
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
-      return sortDescriptor.direction === "descending" ? -cmp : cmp;
-    });
-  }, [sortDescriptor, items]);
+      const first = a[sortDescriptor.column]
+      const second = b[sortDescriptor.column]
+      const cmp = first < second ? -1 : first > second ? 1 : 0
+      return sortDescriptor.direction === "descending" ? -cmp : cmp
+    })
+  }, [sortDescriptor, items])
 
   const renderCell = useCallback((ride, columnKey) => {
-    const cellValue = ride[columnKey];
+    const cellValue = ride[columnKey]
     switch (columnKey) {
       case "pickupLocation":
+        return (
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span>{cellValue}</span>
+          </div>
+        )
       case "dropoffLocation":
+        return (
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span>{cellValue}</span>
+          </div>
+        )
       case "distanceTraveled":
+        return (
+          <div className="flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+            <span>{cellValue} km</span>
+          </div>
+        )
       case "startTime":
       case "endTime":
-      case "rideType":
-        return <span>{cellValue}</span>;
-      case "status":
-        const statusInfo = statusOptions[cellValue] || {};
         return (
-          <span style={{ color: statusInfo.color, fontWeight: 'bold' }}>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span>{new Date(cellValue).toLocaleString()}</span>
+          </div>
+        )
+      case "rideType":
+        return (
+          <div className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-muted-foreground" />
+            <span className="capitalize">{cellValue}</span>
+          </div>
+        )
+      case "status":
+        const statusInfo = statusOptions[cellValue] || {}
+        return (
+          <Badge variant={statusInfo.variant}>
             {statusInfo.label}
-          </span>
-        );
+          </Badge>
+        )
       case "actions":
         return (
-          <div className="relative flex justify-center items-center gap-2">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button isIconOnly radius="full" size="sm" variant="light">
-                  <FaEllipsisV className="text-default-400" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu>
-                <DropdownItem onClick={() => handleView(ride._id)}>View</DropdownItem>
-                <DropdownItem onClick={() => handleEdit(ride._id)}>Edit</DropdownItem>
-                <DropdownItem onClick={() => handleDelete(ride._id)}>Delete</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-        );
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleView(ride._id)}>
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(ride._id)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600" 
+                onClick={() => handleDelete(ride._id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
       default:
-        return cellValue;
+        return cellValue
     }
-  }, [handleDelete, handleView, handleEdit]);
+  }, [])
 
-  const topContent = useMemo(() => {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-3 items-end">
-          <Input
-            isClearable
-            classNames={{ base: "w-full sm:max-w-[44%]", inputWrapper: "border-1" }}
-            placeholder="Search by location..."
-            size="sm"
-            startContent={<FaSearch className="text-default-300" />}
-            value={filterValue}
-            variant="bordered"
-            onClear={() => setFilterValue("")}
-            onValueChange={setFilterValue}
-          />
-          <div className="flex gap-3">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Status
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Ride Status"
-                closeOnSelect={false}
-                selectedKeys={statusFilter}
-                selectionMode="multiple"
-                onSelectionChange={(keys) => setStatusFilter(new Set(keys))}
-              >
-                {Object.keys(statusOptions).map((key) => (
-                  <DropdownItem key={key} className="capitalize">
-                    {capitalize(statusOptions[key].label)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Columns
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Columns"
-                closeOnSelect={false}
-                disallowEmptySelection
-                selectedKeys={visibleColumns}
-                selectionMode="multiple"
-                onSelectionChange={setVisibleColumns}
-              >
-                {rideColumns.map((column) => (
-                  <DropdownItem key={column.uid} className="capitalize">
-                    {capitalize(column.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-        </div>
-      </div>
-    );
-  }, [filterValue, statusFilter, visibleColumns]);
-
-  const bottomContent = (
-    <div className="py-2 px-2 flex justify-between">
-      <Pagination
-        showControls
-        isCompact
-        page={page}
-        total={Math.ceil(filteredRides.length / rowsPerPage)}
-        onChange={setPage}
-        size="sm"
-      />
-      <div className="w-[100px]">
-        <Input
-          isClearable={false}
-          label="Rows per page"
-          labelPlacement="outside"
-          type="number"
-          value={rowsPerPage}
-          size="sm"
-          onValueChange={(value) => setRowsPerPage(Number(value))}
-        />
-      </div>
-    </div>
-  );
+  const totalPages = Math.ceil(filteredRides.length / rowsPerPage)
 
   return (
-    <div className="w-full h-full flex flex-col gap-4">
-      {topContent}
-      <Table
-        aria-label="Rides Table"
-        bottomContent={bottomContent}
-        sortDescriptor={sortDescriptor}
-        selectedKeys={selectedKeys}
-        selectionMode="multiple"
-        onSelectionChange={setSelectedKeys}
-        onSortChange={setSortDescriptor}
-        isHeaderSticky
-        isMultiSort
-      >
-        <TableHeader columns={rideColumns.filter((column) => visibleColumns.has(column.uid))}>
-          {(column) => (
-            <TableColumn
-              key={column.uid}
-              allowsSorting={column.sortable}
-              className="capitalize"
-            >
-              {column.name}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody emptyContent={"No rides available"} items={sortedItems}>
-          {(ride) => (
-            <TableRow key={ride._id}>
-              {(columnKey) => (
-                <TableCell>{renderCell(ride, columnKey)}</TableCell>
-              )}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Truck className="h-6 w-6" />
+          My Rides
+        </CardTitle>
+        <CardDescription>
+          Manage your food transportation rides
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="relative w-full md:w-1/2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by location..."
+                className="pl-8"
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select 
+                onValueChange={(value) => setStatusFilter(value === "all" ? [] : [value])}
+                defaultValue="all"
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {Object.entries(statusOptions).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                onValueChange={(value) => setRowsPerPage(Number(value))}
+                defaultValue="5"
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Rows per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="15">15 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {rideColumns
+                    .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                    .map((column) => (
+                      <TableHead key={column.uid}>
+                        {column.name}
+                      </TableHead>
+                    ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={rideColumns.length} className="h-24 text-center">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : sortedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={rideColumns.length} className="h-24 text-center">
+                      No rides found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedItems.map((item) => (
+                    <TableRow key={item._id}>
+                      {rideColumns
+                        .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                        .map((column) => (
+                          <TableCell key={`${item._id}-${column.uid}`}>
+                            {renderCell(item, column.uid)}
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between px-2">
+            <div className="text-sm text-muted-foreground">
+              Showing <strong>{Math.min((page - 1) * rowsPerPage + 1, filteredRides.length)}</strong> to{" "}
+              <strong>{Math.min(page * rowsPerPage, filteredRides.length)}</strong> of{" "}
+              <strong>{filteredRides.length}</strong> rides
+            </div>
+            
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setPage(Math.max(1, page - 1))
+                    }}
+                    disabled={page === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setPage(pageNum)
+                      }}
+                      isActive={pageNum === page}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setPage(Math.min(totalPages, page + 1))
+                    }}
+                    disabled={page === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }

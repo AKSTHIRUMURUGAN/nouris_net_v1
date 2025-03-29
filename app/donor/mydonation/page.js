@@ -3,52 +3,64 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Table,
   TableHeader,
-  TableColumn,
-  TableBody,
   TableRow,
+  TableHead,
+  TableBody,
   TableCell,
-  Input,
-  Button,
-  Dropdown,
-  DropdownTrigger,
+} from "../../../components/ui/table";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import {
   DropdownMenu,
-  DropdownItem,
-  Pagination,
-} from "@nextui-org/react";
-import { FaSearch, FaChevronDown, FaEllipsisV } from "react-icons/fa";
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "../../../components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { Badge } from "../../../components/ui/badge";
+import { Search, ChevronDown, MoreVertical } from "lucide-react";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation"; // Importing useRouter
-import { capitalize } from "../../data/utils"; // Assuming you have a capitalize utility function
+import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "../../../components/ui/pagination";
 
 const donationColumns = [
-  { name: "NAME", uid: "donationName", sortable: true },
-  { name: "CATEGORY", uid: "category" },
-  { name: "QUANTITY", uid: "quantity" },
-  { name: "STATUS", uid: "status", sortable: true },
-  { name: "ACTIONS", uid: "actions" },
+  { name: "Name", uid: "donationName", sortable: true },
+  { name: "Category", uid: "category" },
+  { name: "Quantity", uid: "quantity" },
+  { name: "Status", uid: "status", sortable: true },
+  { name: "Actions", uid: "actions" },
 ];
 
 const statusOptions = {
   available: {
     label: 'Available',
-    color: 'green',
+    variant: 'success',
   },
   booked: {
     label: 'Booked',
-    color: 'yellow',
+    variant: 'warning',
   },
   'in transit': {
     label: 'In Transit',
-    color: 'blue',
+    variant: 'info',
   },
   delivered: {
     label: 'Delivered',
-    color: 'purple',
+    variant: 'default',
   },
   cancelled: {
     label: 'Cancelled',
-    color: 'red',
+    variant: 'destructive',
   },
 };
 
@@ -57,9 +69,7 @@ const INITIAL_VISIBLE_COLUMNS = ["donationName", "category", "quantity", "status
 export default function DonationsTable() {
   const [donations, setDonations] = useState([]);
   const [filterValue, setFilterValue] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
-  const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-  const [statusFilter, setStatusFilter] = useState(new Set());
+  const [statusFilter, setStatusFilter] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [sortDescriptor, setSortDescriptor] = useState({
     column: "donationName",
@@ -68,7 +78,8 @@ export default function DonationsTable() {
   const [page, setPage] = useState(1);
   const { isLoaded, isSignedIn, user } = useUser();
   const [userId, setUserId] = useState(null);
-  const router = useRouter(); // Initialize the router
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -76,8 +87,6 @@ export default function DonationsTable() {
         const response = await axios.get("/api/users/myprofile");
         if (response.data.success) {
           setUserId(response.data.user._id);
-        } else {
-          console.error("Failed to fetch user profile:", response.data);
         }
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -89,41 +98,37 @@ export default function DonationsTable() {
 
   useEffect(() => {
     const fetchDonations = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get("/api/donations");
         if (response.data.success) {
           setDonations(response.data.donations);
-        } else {
-          console.error("Failed to fetch donations:", response.data);
         }
       } catch (error) {
         console.error("Failed to fetch donations:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchDonations();
   }, []);
 
-  // Function to handle the delete action
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(`/api/donations/${id}`);
       if (response.data.success) {
         setDonations(donations.filter((donation) => donation._id !== id));
-      } else {
-        console.error("Failed to delete donation:", response.data);
       }
     } catch (error) {
       console.error("Failed to delete donation:", error);
     }
   };
 
-  // Function to handle the view action
   const handleView = (id) => {
     router.push(`/donor/${id}`);
   };
 
-  // Function to handle the edit action
   const handleEdit = (id) => {
     router.push(`/donor/edit/${id}`);
   };
@@ -133,7 +138,7 @@ export default function DonationsTable() {
       (donation) =>
         donation.donor === userId &&
         donation.donationName.toLowerCase().includes(filterValue.toLowerCase()) &&
-        (statusFilter.size === 0 || statusFilter.has(donation.status))
+        (statusFilter.length === 0 || statusFilter.includes(donation.status))
     );
   }, [donations, filterValue, userId, statusFilter]);
 
@@ -158,178 +163,191 @@ export default function DonationsTable() {
       case "donationName":
       case "category":
       case "quantity":
-        return <span>{cellValue}</span>;
+        return <span className="font-medium">{cellValue}</span>;
       case "status":
         const statusInfo = statusOptions[cellValue] || {};
         return (
-          <span style={{ color: statusInfo.color, fontWeight: 'bold' }}>
+          <Badge variant={statusInfo.variant}>
             {statusInfo.label}
-          </span>
+          </Badge>
         );
       case "actions":
         return (
-          <div className="relative flex justify-center items-center gap-2">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button isIconOnly radius="full" size="sm" variant="light">
-                  <FaEllipsisV className="text-default-400" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu>
-                <DropdownItem onClick={() => handleView(donation._id)}>View</DropdownItem>
-                <DropdownItem onClick={() => handleEdit(donation._id)}>Edit</DropdownItem>
-                <DropdownItem onClick={() => handleDelete(donation._id)}>Delete</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleView(donation._id)}>
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(donation._id)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600" 
+                onClick={() => handleDelete(donation._id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       default:
         return cellValue;
     }
-  }, [handleDelete, handleView, handleEdit]);
+  }, []);
 
-  const topContent = useMemo(() => {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-3 items-end">
-          <Input
-            isClearable
-            classNames={{ base: "w-full sm:max-w-[44%]", inputWrapper: "border-1" }}
-            placeholder="Search by donation name..."
-            size="sm"
-            startContent={<FaSearch className="text-default-300" />}
-            value={filterValue}
-            variant="bordered"
-            onClear={() => setFilterValue("")}
-            onValueChange={setFilterValue}
-          />
-          <div className="flex gap-3">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Status
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Donation Status"
-                closeOnSelect={false}
-                selectedKeys={statusFilter}
-                selectionMode="multiple"
-                onSelectionChange={(keys) => setStatusFilter(new Set(keys))}
-              >
-                {Object.keys(statusOptions).map((key) => (
-                  <DropdownItem key={key} className="capitalize">
-                    {capitalize(statusOptions[key].label)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Columns
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Table Columns"
-                closeOnSelect={false}
-                selectedKeys={visibleColumns}
-                selectionMode="multiple"
-                onSelectionChange={(keys) => setVisibleColumns(new Set(keys))}
-              >
-                {donationColumns.map((column) => (
-                  <DropdownItem key={column.uid} className="capitalize">
-                    {capitalize(column.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">
-            Total {filteredDonations.length} donations
-          </span>
-          <label className="flex items-center text-default-400 text-small">
-            Rows per page:
-            <select
-              className="bg-transparent outline-none text-default-400 font-bold"
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            >
-              <option className="bg-background" value={5}>
-                5
-              </option>
-              <option className="bg-background" value={10}>
-                10
-              </option>
-              <option className="bg-background" value={15}>
-                15
-              </option>
-            </select>
-          </label>
-        </div>
-      </div>
-    );
-  }, [filterValue, statusFilter, visibleColumns, filteredDonations.length]);
-
-  const bottomContent = (
-    <Pagination
-      isCompact
-      showControls
-      showShadow
-      color="secondary"
-      page={page}
-      total={Math.ceil(filteredDonations.length / rowsPerPage)}
-      initialPage={1}
-      onChange={(page) => setPage(page)}
-    />
-  );
+  const totalPages = Math.ceil(filteredDonations.length / rowsPerPage);
 
   return (
-    <Table
-      aria-label="My Donations Table"
-      bordered
-      lined
-      headerLined
-      sticked
-      topContent={topContent}
-      bottomContent={bottomContent}
-      sortDescriptor={sortDescriptor}
-      onSortChange={setSortDescriptor}
-      selectedKeys={selectedKeys}
-      onSelectionChange={setSelectedKeys}
-      aria-labelledby="donationName"
-    >
-      <TableHeader columns={donationColumns.filter((column) => visibleColumns.has(column.uid))}>
-        {(column) => (
-          <TableColumn
-            key={column.uid}
-            allowsSorting={column.sortable}
-            width={column.uid === "actions" ? "100px" : "auto"}
-          >
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody items={sortedItems}>
-        {(item) => (
-          <TableRow key={item._id}>
-            {(columnKey) => (
-              <TableCell>{renderCell(item, columnKey)}</TableCell>
-            )}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>My Donations</CardTitle>
+        <CardDescription>
+          Manage your food donations and track their status
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="relative w-full md:w-1/2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search donations..."
+                className="pl-8"
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select 
+                onValueChange={(value) => setStatusFilter(value === "all" ? [] : [value])}
+                defaultValue="all"
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {Object.entries(statusOptions).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                onValueChange={(value) => setRowsPerPage(Number(value))}
+                defaultValue="5"
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Rows per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="15">15 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {donationColumns
+                    .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                    .map((column) => (
+                      <TableHead key={column.uid}>
+                        {column.name}
+                      </TableHead>
+                    ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={donationColumns.length} className="h-24 text-center">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : sortedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={donationColumns.length} className="h-24 text-center">
+                      No donations found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedItems.map((item) => (
+                    <TableRow key={item._id}>
+                      {donationColumns
+                        .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                        .map((column) => (
+                          <TableCell key={`${item._id}-${column.uid}`}>
+                            {renderCell(item, column.uid)}
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between px-2">
+            <div className="text-sm text-muted-foreground">
+              Showing <strong>{Math.min((page - 1) * rowsPerPage + 1, filteredDonations.length)}</strong> to{" "}
+              <strong>{Math.min(page * rowsPerPage, filteredDonations.length)}</strong> of{" "}
+              <strong>{filteredDonations.length}</strong> donations
+            </div>
+            
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(Math.max(1, page - 1));
+                    }}
+                    disabled={page === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(pageNum);
+                      }}
+                      isActive={pageNum === page}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(Math.min(totalPages, page + 1));
+                    }}
+                    disabled={page === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

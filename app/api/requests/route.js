@@ -1,5 +1,5 @@
-import connectDB from "../../../libs/mongodb";
-import Request from "../../../models/requestModel";
+import connectDB from "../libs/mongodb";
+import Request from "../models/requestModel";
 import { NextResponse } from "next/server";
 
 // Get all requests

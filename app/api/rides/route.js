@@ -1,5 +1,5 @@
-import connectDB from "../../../libs/mongodb";
-import Ride from "../../../models/rideModel";
+import connectDB from "../libs/mongodb";
+import Ride from "../models/rideModel";
 import { NextResponse } from "next/server";
 
 // Get all rides

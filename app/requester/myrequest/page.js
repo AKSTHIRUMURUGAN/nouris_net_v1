@@ -3,24 +3,35 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Table,
   TableHeader,
-  TableColumn,
-  TableBody,
   TableRow,
+  TableHead,
+  TableBody,
   TableCell,
-  Input,
-  Button,
-  Dropdown,
-  DropdownTrigger,
+} from "../../../components/ui/table";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import {
   DropdownMenu,
-  DropdownItem,
-  Pagination,
-  Spinner, // Import Spinner from NextUI
-} from "@nextui-org/react";
-import { FaSearch, FaChevronDown, FaEllipsisV } from "react-icons/fa";
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "../../../components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { Badge } from "../../../components/ui/badge";
+import { Search, ChevronDown, MoreVertical } from "lucide-react";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation"; 
-import { capitalize } from "../../data/utils"; 
+import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "../../../components/ui/pagination";
 
 const requesterColumns = [
   { name: "NEEDER", uid: "needer" },
@@ -36,19 +47,19 @@ const requesterColumns = [
 const statusOptions = {
   pending: {
     label: "Pending",
-    color: "orange",
+    variant: "secondary",
   },
   approved: {
     label: "Approved",
-    color: "green",
+    variant: "success",
   },
   rejected: {
     label: "Rejected",
-    color: "red",
+    variant: "destructive",
   },
   fulfilled: {
     label: "Fulfilled",
-    color: "blue",
+    variant: "default",
   },
 };
 
@@ -57,21 +68,15 @@ const INITIAL_VISIBLE_COLUMNS = [
   "productName",
   "quantity",
   "lastDate",
-  "address",
-  "specialNote",
   "status",
   "actions",
 ];
 
 export default function RequestersTable() {
   const [requesters, setRequesters] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
   const [filterValue, setFilterValue] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
-  const [visibleColumns, setVisibleColumns] = useState(
-    new Set(INITIAL_VISIBLE_COLUMNS)
-  );
-  const [statusFilter, setStatusFilter] = useState(new Set());
+  const [statusFilter, setStatusFilter] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [sortDescriptor, setSortDescriptor] = useState({
     column: "lastDate",
@@ -87,9 +92,7 @@ export default function RequestersTable() {
       try {
         const response = await axios.get("/api/users/myprofile");
         if (response.data.success) {
-          setUserId(response.data.user._id)
-        } else {
-          console.error("Failed to fetch user profile:", response.data);
+          setUserId(response.data.user._id);
         }
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -102,33 +105,26 @@ export default function RequestersTable() {
   useEffect(() => {
     const fetchRequesters = async () => {
       try {
-        setLoading(true); // Set loading to true before fetching
+        setLoading(true);
         const response = await axios.get("/api/requests");
         if (response.data.success) {
-          if(response.data.success!=0){
-          setRequesters(response.data.requests);
-         }
-        } else {
-          console.error("Failed to fetch requesters:", response.data);
+          setRequesters(response.data.requests || []);
         }
       } catch (error) {
         console.error("Failed to fetch requesters:", error);
       } finally {
-        setLoading(false); // Set loading to false after fetching
+        setLoading(false);
       }
     };
 
     fetchRequesters();
   }, []);
 
-
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(`/api/requesters/${id}`);
       if (response.data.success) {
-        setRequesters(requesters?.filter((requester) => requester._id !== id));
-      } else {
-        console.error("Failed to delete requester:", response.data);
+        setRequesters(requesters.filter((requester) => requester._id !== id));
       }
     } catch (error) {
       console.error("Failed to delete requester:", error);
@@ -144,14 +140,12 @@ export default function RequestersTable() {
   };
 
   const filteredRequesters = useMemo(() => {
-    return requesters?.filter(
+    return requesters.filter(
       (requester) =>
         requester.needer === userId &&
-        (requester.needer.toLowerCase().includes(filterValue.toLowerCase()) ||
-          requester.productName
-            .toLowerCase()
-            .includes(filterValue.toLowerCase())) &&
-        (statusFilter.size === 0 || statusFilter.has(requester.status))
+        (requester.needer?.toLowerCase().includes(filterValue.toLowerCase()) ||
+          requester.productName?.toLowerCase().includes(filterValue.toLowerCase())) &&
+        (statusFilter.length === 0 || statusFilter.includes(requester.status))
     );
   }, [requesters, filterValue, userId, statusFilter]);
 
@@ -170,231 +164,200 @@ export default function RequestersTable() {
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = useCallback(
-    (requester, columnKey) => {
-      const cellValue = requester[columnKey];
-      switch (columnKey) {
-        case "needer":
-        case "productName":
-        case "quantity":
-        case "lastDate":
-        case "address":
-        case "specialNote":
-          return <span>{cellValue}</span>;
-        case "status":
-          const statusInfo = statusOptions[cellValue] || {};
-          return (
-            <span style={{ color: statusInfo.color, fontWeight: "bold" }}>
-              {statusInfo.label}
-            </span>
-          );
-        case "actions":
-          return (
-            <div className="relative flex justify-center items-center gap-2">
-              <Dropdown>
-                <DropdownTrigger>
-                  <Button isIconOnly radius="full" size="sm" variant="light">
-                    <FaEllipsisV className="text-default-400" />
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu>
-                  <DropdownItem onClick={() => handleView(requester._id)}>
-                    View
-                  </DropdownItem>
-                  <DropdownItem onClick={() => handleEdit(requester._id)}>
-                    Edit
-                  </DropdownItem>
-                  <DropdownItem onClick={() => handleDelete(requester._id)}>
-                    Delete
-                  </DropdownItem>
-                </DropdownMenu>
-              </Dropdown>
-            </div>
-          );
-        default:
-          return cellValue;
-      }
-    },
-    [handleDelete, handleView, handleEdit]
-  );
+  const renderCell = useCallback((requester, columnKey) => {
+    const cellValue = requester[columnKey];
+    switch (columnKey) {
+      case "needer":
+      case "productName":
+      case "quantity":
+      case "lastDate":
+      case "address":
+      case "specialNote":
+        return <span className="font-medium">{cellValue}</span>;
+      case "status":
+        const statusInfo = statusOptions[cellValue] || {};
+        return (
+          <Badge variant={statusInfo.variant}>
+            {statusInfo.label}
+          </Badge>
+        );
+      case "actions":
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleView(requester._id)}>
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(requester._id)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600" 
+                onClick={() => handleDelete(requester._id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      default:
+        return cellValue;
+    }
+  }, []);
 
-  const topContent = useMemo(() => {
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-3 items-end">
-          <Input
-            isClearable
-            classNames={{ base: "w-full sm:max-w-[44%]", inputWrapper: "border-1" }}
-            placeholder="Search by needer or product..."
-            size="sm"
-            startContent={<FaSearch className="text-default-300" />}
-            value={filterValue}
-            variant="bordered"
-            onClear={() => setFilterValue("")}
-            onValueChange={setFilterValue}
-          />
-          <div className="flex gap-3">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Status
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Request Status"
-                closeOnSelect={false}
-                selectedKeys={statusFilter}
-                selectionMode="multiple"
-                onSelectionChange={(keys) => setStatusFilter(new Set(keys))}
-              >
-                {Object.keys(statusOptions).map((key) => (
-                  <DropdownItem key={key} className="capitalize">
-                    {capitalize(statusOptions[key].label)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  endContent={<FaChevronDown className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
-                  Columns
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Columns"
-                closeOnSelect={false}
-                disallowEmptySelection
-                selectedKeys={visibleColumns}
-                selectionMode="multiple"
-                onSelectionChange={setVisibleColumns}
-              >
-                {requesterColumns.map((column) => (
-                  <DropdownItem key={column.uid} className="capitalize">
-                    {capitalize(column.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-        </div>
-      </div>
-    );
-  }, [filterValue, visibleColumns, statusFilter]);
+  const totalPages = Math.ceil(filteredRequesters.length / rowsPerPage);
 
   return (
-    <div className="w-full overflow-hidden">
-      <div className="flex flex-col gap-2">
-        {topContent}
-        <div className="overflow-scroll">
-          {loading ? ( // Check if loading
-            <Spinner size="lg" /> // Display Spinner if loading
-          ) : (
-            <Table
-              aria-label="Requesters Table"
-              classNames={{
-                base: "min-w-full mt-2 border",
-                table: "w-full",
-                th: "bg-default-100",
-              }}
-              sortDescriptor={sortDescriptor}
-              onSortChange={setSortDescriptor}
-              selectedKeys={selectedKeys}
-              onSelectionChange={setSelectedKeys}
-              selectionMode="multiple"
-              disallowEmptySelection
-            >
-              <TableHeader columns={requesterColumns}>
-                {(column) =>
-                  visibleColumns.has(column.uid) && (
-                    <TableColumn
-                      key={column.uid}
-                      align="start"
-                      allowsSorting={column.sortable}
-                    >
-                      {column.name}
-                    </TableColumn>
-                  )
-                }
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>My Requests</CardTitle>
+        <CardDescription>
+          Manage your food requests and track their status
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="relative w-full md:w-1/2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by needer or product..."
+                className="pl-8"
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select 
+                onValueChange={(value) => setStatusFilter(value === "all" ? [] : [value])}
+                defaultValue="all"
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {Object.entries(statusOptions).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                onValueChange={(value) => setRowsPerPage(Number(value))}
+                defaultValue="5"
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Rows per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="15">15 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {requesterColumns
+                    .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                    .map((column) => (
+                      <TableHead key={column.uid}>
+                        {column.name}
+                      </TableHead>
+                    ))}
+                </TableRow>
               </TableHeader>
-              <TableBody emptyContent="No requesters available">
-                {sortedItems.map((requester) => (
-                  <TableRow key={requester._id}>
-                    {visibleColumns.has("needer") && (
-                      <TableCell>{renderCell(requester, "needer")}</TableCell>
-                    )}
-                    {visibleColumns.has("productName") && (
-                      <TableCell>
-                        {renderCell(requester, "productName")}
-                      </TableCell>
-                    )}
-                    {visibleColumns.has("quantity") && (
-                      <TableCell>{renderCell(requester, "quantity")}</TableCell>
-                    )}
-                    {visibleColumns.has("lastDate") && (
-                      <TableCell>{renderCell(requester, "lastDate")}</TableCell>
-                    )}
-                    {visibleColumns.has("address") && (
-                      <TableCell>{renderCell(requester, "address")}</TableCell>
-                    )}
-                    {visibleColumns.has("specialNote") && (
-                      <TableCell>
-                        {renderCell(requester, "specialNote")}
-                      </TableCell>
-                    )}
-                    {visibleColumns.has("status") && (
-                      <TableCell>{renderCell(requester, "status")}</TableCell>
-                    )}
-                    {visibleColumns.has("actions") && (
-                      <TableCell>{renderCell(requester, "actions")}</TableCell>
-                    )}
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={requesterColumns.length} className="h-24 text-center">
+                      Loading...
+                    </TableCell>
                   </TableRow>
-                ))}
+                ) : sortedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={requesterColumns.length} className="h-24 text-center">
+                      No requests found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedItems.map((item) => (
+                    <TableRow key={item._id}>
+                      {requesterColumns
+                        .filter((column) => INITIAL_VISIBLE_COLUMNS.includes(column.uid))
+                        .map((column) => (
+                          <TableCell key={`${item._id}-${column.uid}`}>
+                            {renderCell(item, column.uid)}
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-          )}
+          </div>
+
+          <div className="flex items-center justify-between px-2">
+            <div className="text-sm text-muted-foreground">
+              Showing <strong>{Math.min((page - 1) * rowsPerPage + 1, filteredRequesters.length)}</strong> to{" "}
+              <strong>{Math.min(page * rowsPerPage, filteredRequesters.length)}</strong> of{" "}
+              <strong>{filteredRequesters.length}</strong> requests
+            </div>
+            
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(Math.max(1, page - 1));
+                    }}
+                    disabled={page === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(pageNum);
+                      }}
+                      isActive={pageNum === page}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage(Math.min(totalPages, page + 1));
+                    }}
+                    disabled={page === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
-        <div className="flex justify-between items-center mt-4">
-          <Pagination
-            page={page}
-            onPageChange={setPage}
-            total={Math.ceil(filteredRequesters.length / rowsPerPage)}
-          />
-          <Dropdown>
-            <DropdownTrigger>
-              <Button
-                endContent={<FaChevronDown className="text-small" />}
-                size="sm"
-                variant="flat"
-              >
-                Rows per page
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label="Rows per page"
-              selectedKeys={new Set([`${rowsPerPage}`])}
-              selectionMode="single"
-              disallowEmptySelection
-              onSelectionChange={(keys) =>
-                setRowsPerPage(Number(keys.values().next().value))
-              }
-            >
-              <DropdownItem key="5">5</DropdownItem>
-              <DropdownItem key="10">10</DropdownItem>
-              <DropdownItem key="15">15</DropdownItem>
-              <DropdownItem key="20">20</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

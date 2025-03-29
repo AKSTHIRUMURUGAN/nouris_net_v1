@@ -1,5 +1,5 @@
-import connectDB from "../../../../libs/mongodb";
-import Request from "../../../../models/requestModel"; // Assuming you have defined this model
+import connectDB from "../../libs/mongodb";
+import Request from "../../models/requestModel"; // Assuming you have defined this model
 import { NextResponse } from "next/server";
 
 // Get a specific request by ID

@@ -1,235 +1,236 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import {
-  Input,
-  Button,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Divider,
-  Link,
-  Textarea,
-  Image,
-  RadioGroup,
-  Radio,
-} from "@nextui-org/react";
-import { useRouter, useParams } from "next/navigation";
-import axios from "axios";
-import { FaInfoCircle } from "react-icons/fa";
+"use client"
+import React, { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { Button } from "../../../../components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../../../components/ui/card"
+import { Input } from "../../../../components/ui/input"
+import { Textarea } from "../../../../components/ui/textarea"
+import { Label } from "../../../../components/ui/label"
+import { CalendarIcon, MapPinIcon, PackageIcon, InfoIcon } from "lucide-react"
+import { toast } from "../../../../components/ui/use-toast"
+import Link from "next/link"
 
-export default function RideEdit() {
-  const [user, setUser] = useState("");
-  const [donation, setDonation] = useState("");
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [dropoffLocation, setDropoffLocation] = useState("");
-  const [distanceTraveled, setDistanceTraveled] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [rideType, setRideType] = useState("delivery");
-  const [product, setProduct] = useState("");
-  const [notes, setNotes] = useState("");
-  const router = useRouter();
-  const { id } = useParams(); // Get the ride ID from the URL
-
-  // Function to format date-time strings to `datetime-local` format
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return "";
-    const date = new Date(dateTimeString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+export default function EditRequestPage() {
+  const { id } = useParams()
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    productName: "",
+    quantity: 1,
+    lastDate: "",
+    address: "",
+    specialNote: ""
+  })
+  const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    const fetchRideDetail = async () => {
+    const fetchRequest = async () => {
       try {
-        const { data } = await axios.get(`/api/rides/${id}`);
-        const rideData = data.ride;
-        setUser(rideData.user || "");
-        setDonation(rideData.donation?.donor || "");
-        setPickupLocation(rideData.pickupLocation || "");
-        setDropoffLocation(rideData.dropoffLocation || "");
-        setDistanceTraveled(rideData.distanceTraveled || "");
-        setStartTime(formatDateTime(rideData.startTime));
-        setEndTime(formatDateTime(rideData.endTime));
-        setRideType(rideData.rideType || "delivery");
-        setProduct(rideData.product || "");
-        setNotes(rideData.notes || "");
+        const response = await fetch(`/api/requests/${id}`)
+        const data = await response.json()
+        
+        if (!data.success) {
+          throw new Error(data.message || "Failed to fetch request")
+        }
+        
+        setFormData({
+          productName: data.request.productName,
+          quantity: data.request.quantity,
+          lastDate: formatDateForInput(data.request.lastDate),
+          address: data.request.address,
+          specialNote: data.request.specialNote || ""
+        })
       } catch (error) {
-        console.error("Failed to fetch ride detail:", error);
+        console.error("Error fetching request:", error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch request details",
+          variant: "destructive",
+        })
+        router.push("/requester/myrequest")
+      } finally {
+        setLoading(false)
       }
-    };
+    }
 
-    fetchRideDetail();
-  }, [id]);
+    fetchRequest()
+  }, [id, router])
+
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return ""
+    const date = new Date(dateString)
+    const isoString = date.toISOString()
+    return isoString.substring(0, 16) // Format: YYYY-MM-DDTHH:MM
+  }
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const updatedData = {
-      user,
-      donation,
-      pickupLocation,
-      dropoffLocation,
-      distanceTraveled,
-      startTime,
-      endTime,
-      rideType,
-      product,
-      notes,
-    };
+    e.preventDefault()
+    setIsSubmitting(true)
 
     try {
-      const response = await axios.put(`/api/rides/${id}`, updatedData, {
+      const response = await fetch(`/api/requests/${id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-      });
+        body: JSON.stringify(formData)
+      })
+      const data = await response.json()
 
-      if (!response.data.success) {
-        throw new Error("Failed to update ride");
+      if (!data.success) {
+        throw new Error(data.message || "Failed to update request")
       }
 
-      alert("Ride updated successfully");
-      router.push(`/rides/${id}`);
+      toast({
+        title: "Success",
+        description: "Request updated successfully",
+      })
+      router.push(`/requester/${id}`)
     } catch (error) {
-      console.error("Error:", error);
-      alert("Update failed");
+      console.error("Error updating request:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update request",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex justify-center align-middle">
-      <Card className="card">
-        <CardHeader className="flex gap-3">
-          <Image
-            alt="nextui logo"
-            height={40}
-            radius="sm"
-            src="https://utfs.io/f/a9b8f892-fc28-48d6-be0a-3a22f2dc0d06-d48s3m.png"
-            width={40}
-          />
-          <div className="flex flex-col">
-            <p className="text-md">Nourish Net</p>
-            <p className="text-small text-default-500">Edit Ride</p>
-          </div>
+    <div className="container mx-auto py-8 px-4 max-w-2xl">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Edit Request</h1>
+          <p className="text-muted-foreground">Update your food request details</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => router.push(`/requester/${id}`)}
+        >
+          Back to Request
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PackageIcon className="h-6 w-6" />
+            Request Information
+          </CardTitle>
+          <CardDescription>
+            Update the details of your request below
+          </CardDescription>
         </CardHeader>
-        <Divider />
-        <CardBody className="m-10">
-          <form
-            className="flex flex-col align-middle gap-3 p-10"
-            onSubmit={handleSubmit}
-          >
-            <Input
-              isClearable
-              isRequired
-              label="Donation ID"
-              variant="bordered"
-              description="Enter the Donation ID."
-              value={donation}
-              onChange={(e) => setDonation(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              isClearable
-              isRequired
-              label="Pickup Location"
-              variant="bordered"
-              description="Enter the pickup location."
-              value={pickupLocation}
-              onChange={(e) => setPickupLocation(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              isClearable
-              isRequired
-              label="Dropoff Location"
-              variant="bordered"
-              description="Enter the dropoff location."
-              value={dropoffLocation}
-              onChange={(e) => setDropoffLocation(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              type="number"
-              label="Distance Traveled (km)"
-              variant="bordered"
-              value={distanceTraveled}
-              min={0}
-              onChange={(e) => setDistanceTraveled(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              type="datetime-local"
-              isRequired
-              label="Start Time"
-              variant="bordered"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              type="datetime-local"
-              label="End Time"
-              variant="bordered"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="max-w-xs"
-            />
-            <RadioGroup
-              label="Ride Type"
-              value={rideType}
-              onValueChange={setRideType}
-              className="max-w-xs"
-            >
-              <Radio value="delivery">Delivery</Radio>
-              <Radio value="pickup">Pickup</Radio>
-            </RadioGroup>
-            <Input
-              isClearable
-              isRequired
-              label="Product Description"
-              variant="bordered"
-              description="Enter the product description."
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
-              className="max-w-xs"
-            />
-            <Textarea
-              label="Notes"
-              placeholder="Any special notes?"
-              variant="bordered"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button color="primary" type="submit">
-              Update Ride
-            </Button>
+        
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="productName">Product Name</Label>
+              <Input
+                id="productName"
+                name="productName"
+                value={formData.productName}
+                onChange={handleChange}
+                required
+                placeholder="What food item do you need?"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity (kg)</Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min="1"
+                value={formData.quantity}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastDate">Last Date Needed</Label>
+              <div className="relative">
+                <Input
+                  id="lastDate"
+                  name="lastDate"
+                  type="datetime-local"
+                  value={formData.lastDate}
+                  onChange={handleChange}
+                  required
+                />
+                <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Delivery Address</Label>
+              <div className="relative">
+                <Textarea
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  placeholder="Where should the food be delivered?"
+                />
+                <MapPinIcon className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="specialNote">Special Notes</Label>
+              <Textarea
+                id="specialNote"
+                name="specialNote"
+                value={formData.specialNote}
+                onChange={handleChange}
+                placeholder="Any dietary restrictions or special requirements?"
+              />
+            </div>
+
+            <CardFooter className="flex justify-end gap-4 px-0 pt-6">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => router.push(`/requester/${id}`)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Request"}
+              </Button>
+            </CardFooter>
           </form>
-        </CardBody>
-        <Divider />
-        <CardFooter>
-          <p>
-            Need help? <FaInfoCircle className="inline-block ml-1" />
-          </p>
-          <span>
-            <Link
-              className="text-blue-600"
-              showAnchorIcon
-              onClick={() => {
-                router.push("/help");
-              }}
-            >
-              Contact Support
-            </Link>
-          </span>
-        </CardFooter>
+        </CardContent>
       </Card>
+
+      <div className="mt-4 text-center text-sm text-muted-foreground">
+        Need help?{" "}
+        <Link 
+          href="/help" 
+          className="text-primary hover:underline inline-flex items-center"
+        >
+          Contact Support <InfoIcon className="ml-1 h-4 w-4" />
+        </Link>
+      </div>
     </div>
-  );
+  )
 }

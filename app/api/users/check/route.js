@@ -1,18 +1,18 @@
-import connectDB from "../../../../libs/mongodb";
-import User from "../../../../models/userModel";
+import connectDB from "../../libs/mongodb";
+import User from "../../models/userModel";
 import { NextResponse } from "next/server";
 
-// Check if a user exists by clerkId
+// Check if a user exists by Clerk ID
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const clerkId = searchParams.get("clerkId");
-
   try {
+    const { searchParams } = new URL(req.url);
+    const clerkId = searchParams.get("clerkId");
+
     await connectDB();
     const user = await User.findOne({ clerkId });
 
     if (user) {
-      return NextResponse.json({ exists: true }, { status: 200 });
+      return NextResponse.json({ exists: true, user }, { status: 200 });
     } else {
       return NextResponse.json({ exists: false }, { status: 200 });
     }
