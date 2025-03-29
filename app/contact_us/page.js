@@ -1,55 +1,66 @@
-"use client"
-import { useState } from "react"
-import { Card, CardHeader, CardBody, CardFooter, Divider, Button, Input, Textarea } from "@nextui-org/react"
-import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaCheck, FaExclamationTriangle } from "react-icons/fa"
-import emailjs from '@emailjs/browser'
+"use client";
+import { useState } from "react";
+import { Card, CardHeader, CardBody, CardFooter, Divider, Button, Input, Textarea } from "@nextui-org/react";
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaCheck, FaExclamationTriangle } from "react-icons/fa";
+import emailjs from 'emailjs-com';
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
     userName: "",
     userEmail: "",
     userMessage: "",
-  })
+  });
 
-  const [isSent, setIsSent] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
+  const [isSent, setIsSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    })
-  }
+    });
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError("")
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
 
-    // Initialize EmailJS (you should do this once in your app)
-    emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_USER_ID)
+    // Send email to us
+    emailjs
+      .send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
+        formData,
+        process.env.NEXT_PUBLIC_EMAILJS_USER_ID
+      )
+      .then((response) => {
+        console.log('Email sent successfully:', response.status, response.text);
+      })
+      .catch((err) => {
+        console.error('Failed to send email:', err);
+      });
 
-    emailjs.send(
-      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
-      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-      {
-        from_name: formData.userName,
-        from_email: formData.userEmail,
-        message: formData.userMessage,
-      }
-    )
-    .then((response) => {
-      console.log('Email sent successfully:', response.status, response.text)
-      setIsSent(true)
-      setIsSubmitting(false)
-    })
-    .catch((err) => {
-      console.error('Failed to send email:', err)
-      setError("Failed to send message. Please try again later.")
-      setIsSubmitting(false)
-    })
-  }
+    // Send email to user
+    emailjs
+      .send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_USER,
+        { ...formData, to_email: formData.userEmail },
+        process.env.NEXT_PUBLIC_EMAILJS_USER_ID
+      )
+      .then((response) => {
+        console.log('Email sent to USER successfully:', response.status, response.text);
+        setIsSent(true);
+        setIsSubmitting(false);
+      })
+      .catch((err) => {
+        console.error('Failed to send email to USER:', err);
+        setError("Failed to send message. Please try again later.");
+        setIsSubmitting(false);
+      });
+  };
 
   return (
     <div className="container mx-auto py-10 px-4">
@@ -164,12 +175,12 @@ export default function ContactUs() {
                       variant="flat"
                       className="mt-6"
                       onClick={() => {
-                        setIsSent(false)
+                        setIsSent(false);
                         setFormData({
                           userName: "",
                           userEmail: "",
                           userMessage: "",
-                        })
+                        });
                       }}
                     >
                       Send Another Message
@@ -229,5 +240,5 @@ export default function ContactUs() {
         </div>
       </div>
     </div>
-  )
+  );
 }

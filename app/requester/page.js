@@ -1,19 +1,33 @@
-"use client"
-import { useRouter } from 'next/navigation'
-import React from "react"
-import { Button } from "../../components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { Coins, Clock, Scale, HeartHandshake, ArrowRight } from "lucide-react"
-import dynamic from 'next/dynamic'
+"use client";
+import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { Button } from "../../components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Coins, Clock, Scale, HeartHandshake, ArrowRight } from "lucide-react";
+import dynamic from 'next/dynamic';
 
+// Dynamically import Lottie with SSR disabled and loading fallback
 const Lottie = dynamic(
-  () => import('lottie-react'),
-  { ssr: false }
-)
+  () => import('lottie-react').then((mod) => mod.default),
+  { 
+    ssr: false,
+    loading: () => <div className="w-full h-[400px] bg-gray-100 rounded-lg animate-pulse" />
+  }
+);
 
 const Page = () => {
-  const router = useRouter()
+  const router = useRouter();
+  const [animationData, setAnimationData] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    // Dynamically import animation data to ensure it's only loaded client-side
+    import("../assets/Animation - 1723325524933.json").then((data) => {
+      setAnimationData(data.default);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50">
@@ -52,33 +66,40 @@ const Page = () => {
             Empowering you with access to nourishment, anytime, anywhere
           </p>
           
-          <div className="w-64 h-64 mx-auto mb-8">
-            <Lottie 
-              animationData="https://lottie.host/84293a06-58ec-4a88-bfd2-e6d672bb9a5a/ys8UWuIJsR.json"
-              loop={true}
-              autoplay={true}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </div>
-          
-          <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <p className="text-gray-800 mb-3">
-              Kindly be responsible for the quantity of the request you make.
-            </p>
-            <p className="text-gray-800 mb-3">
-              Make use of the food you requested wisely.
-            </p>
-            <p className="text-gray-800">
-              Please fill in the form to make your request.
-            </p>
+          <div className="flex flex-col md:flex-row items-center justify-between mb-12">
+            <div className="w-full md:w-1/2">
+              {isClient && animationData ? (
+                <Lottie 
+                  animationData={animationData}
+                  loop={true}
+                  style={{ width: '100%', height: '400px' }}
+                />
+              ) : (
+                <div className="w-full h-[400px] bg-gray-100 rounded-lg animate-pulse" />
+              )}
+            </div>
             
-            <Button 
-              onClick={() => router.push("/requester/create")}
-              className="mt-6 group"
-            >
-              Create New Request
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            <div className="w-full md:w-1/2 mt-8 md:mt-0 md:pl-8">
+              <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <p className="text-gray-800 mb-3">
+                  Kindly be responsible for the quantity of the request you make.
+                </p>
+                <p className="text-gray-800 mb-3">
+                  Make use of the food you requested wisely.
+                </p>
+                <p className="text-gray-800">
+                  Please fill in the form to make your request.
+                </p>
+                
+                <Button 
+                  onClick={() => router.push("/requester/create")}
+                  className="mt-6 group"
+                >
+                  Create New Request
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -203,7 +224,7 @@ const Page = () => {
         </section>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;
