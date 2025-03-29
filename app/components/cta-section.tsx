@@ -7,7 +7,7 @@ export default function CTASection() {
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold">Join Our Mission Today</h2>
         <p className="mt-4 text-lg mx-auto max-w-2xl">
-          Whether you're donating food, delivering it, or receiving it, you're part of the solution to food waste and
+          Whether you&apos;re donating food, delivering it, or receiving it, you&apos;re part of the solution to food waste and
           hunger.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">

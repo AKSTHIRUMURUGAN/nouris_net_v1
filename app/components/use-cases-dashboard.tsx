@@ -77,7 +77,7 @@ export default function UseCasesDashboard() {
               />
             </div>
             <p className="text-gray-600">
-              Users can submit feedback about the donation process, which helps improve the app's features and
+              Users can submit feedback about the donation process, which helps improve the app&apos;s features and
               functionality, creating a better experience for all participants.
             </p>
           </CardBody>

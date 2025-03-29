@@ -58,8 +58,8 @@ export default function RiderPage() {
               </CardHeader>
               <CardBody>
                 <p className="text-lg mt-2 text-gray-700 dark:text-gray-300">
-                  "Join our community of volunteer riders who make a real difference by collecting surplus food and
-                  delivering it to those in need..."
+                  &quot;Join our community of volunteer riders who make a real difference by collecting surplus food and
+                  delivering it to those in need...&quot;
                 </p>
                 <div className="mt-6">
                   <Button as={Link} href="/donor" color="primary" size="lg">
@@ -115,7 +115,7 @@ export default function RiderPage() {
           <div className="text-center">
             <FaAward className="text-5xl mx-auto mb-4" />
             <h2 className="text-3xl font-bold mb-4">Become a Rider Today</h2>
-            <p className="text-lg mb-6">Join our community of riders and make a real difference in people's lives</p>
+            <p className="text-lg mb-6">Join our community of riders and make a real difference in people&apos;s lives</p>
             <Button as={Link} href="/rider/create" color="default" size="lg" className="font-bold">
               Start Your Journey
             </Button>

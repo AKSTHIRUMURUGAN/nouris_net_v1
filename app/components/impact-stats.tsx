@@ -7,7 +7,7 @@ export default function ImpactStats() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Our Impact</h2>
-          <p className="text-lg text-gray-600">Together, we're making a difference in our community</p>
+          <p className="text-lg text-gray-600">Together, we&apos;re making a difference in our community</p>
           <div className="w-24 h-1 bg-green-500 mx-auto mt-4"></div>
         </div>
 
@@ -70,8 +70,8 @@ export default function ImpactStats() {
             <div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4">Monthly Progress</h3>
               <p className="text-gray-600 mb-6">
-                We're growing every month, with more donors, riders, and recipients joining our community. Here's how
-                we've been doing:
+                We&apos;re growing every month, with more donors, riders, and recipients joining our community. Here&apos;s how
+                we&apos;ve been doing:
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center justify-between">

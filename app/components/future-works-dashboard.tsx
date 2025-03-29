@@ -29,7 +29,7 @@ export default function FutureWorksDashboard() {
               />
             </div>
             <p className="text-gray-600">
-              We're planning to expand our operations to new regions and international markets, bringing our food
+              We&apos;re planning to expand our operations to new regions and international markets, bringing our food
               donation platform to more communities around the world.
             </p>
             <div className="mt-4">
@@ -59,7 +59,7 @@ export default function FutureWorksDashboard() {
               />
             </div>
             <p className="text-gray-600">
-              We're working on integrating with other sustainability and eco-friendly platforms to create a more
+              We&apos;re working on integrating with other sustainability and eco-friendly platforms to create a more
               comprehensive approach to reducing waste and promoting sustainability.
             </p>
             <div className="mt-4">
@@ -89,7 +89,7 @@ export default function FutureWorksDashboard() {
               />
             </div>
             <p className="text-gray-600">
-              We're developing localization and multi-language support to make our platform accessible to people from
+              We&apos;re developing localization and multi-language support to make our platform accessible to people from
               different linguistic and cultural backgrounds.
             </p>
             <div className="mt-4">
@@ -105,8 +105,8 @@ export default function FutureWorksDashboard() {
       <div className="mt-12 bg-white rounded-xl p-8 shadow-md">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">Get Involved in Our Future</h3>
         <p className="text-gray-600 mb-6">
-          We're always looking for partners, developers, and volunteers to help us build the future of Nourish Net. If
-          you're interested in contributing to any of these initiatives, please get in touch!
+          We&apos;re always looking for partners, developers, and volunteers to help us build the future of Nourish Net. If
+          you&apos;re interested in contributing to any of these initiatives, please get in touch!
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 p-4 rounded-lg">
