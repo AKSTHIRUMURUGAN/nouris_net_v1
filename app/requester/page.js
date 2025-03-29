@@ -9,16 +9,22 @@ import { Coins, Clock, Scale, HeartHandshake, ArrowRight } from "lucide-react"
 
 const Page = () => {
   useEffect(() => {
-    const animation = lottie.loadAnimation({
-      container: document.getElementById("lottie-container"),
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
-      path: "https://lottie.host/84293a06-58ec-4a88-bfd2-e6d672bb9a5a/ys8UWuIJsR.json",
-    })
+    // Check if window is defined (client-side)
+    if (typeof window !== "undefined") {
+      const container = document.getElementById("lottie-container");
+      if (container) {
+        const animation = lottie.loadAnimation({
+          container,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: "https://lottie.host/84293a06-58ec-4a88-bfd2-e6d672bb9a5a/ys8UWuIJsR.json",
+        });
 
-    return () => animation.destroy()
-  }, [])
+        return () => animation.destroy();
+      }
+    }
+  }, []);
 
   const router = useRouter()
 
